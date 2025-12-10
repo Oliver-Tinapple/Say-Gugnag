@@ -8,9 +8,9 @@ Just **click on any text** to edit it!
 - Text highlights green when you click it
 - Press **Enter** to save
 - Press **Escape** to cancel
-- Everyone sees the changes instantly!
-- **Auto-reset**: Changes reset to defaults after 60 seconds
-- **Countdown**: A 30-second countdown appears in the top-right corner
+- **Live sync**: Everyone sees changes INSTANTLY via WebSockets
+- **Auto-reset**: Changes reset to defaults after 5 minutes
+- **Countdown**: A live countdown timer (MM:SS format) appears in the top-right corner
 
 ## Files Added
 
@@ -32,6 +32,6 @@ Quick version:
 
 - `GET /api/text` - Get all text content
 - `POST /api/text/:key` - Update specific text
-- `POST /api/text/reset-all` - Reset all text to defaults (auto-called after 60 seconds)
+- `POST /api/text/reset-all` - Reset all text to defaults (auto-called after 5 minutes)
 
 Simple and works with Railway's free PostgreSQL database!

@@ -2,9 +2,42 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const WebSocket = require('ws');
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 const port = process.env.PORT || 3000;
+
+// Store all connected WebSocket clients
+const clients = new Set();
+
+// WebSocket connection handler
+wss.on('connection', (ws) => {
+    clients.add(ws);
+    console.log('New WebSocket client connected. Total clients:', clients.size);
+
+    ws.on('close', () => {
+        clients.delete(ws);
+        console.log('Client disconnected. Total clients:', clients.size);
+    });
+
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+        clients.delete(ws);
+    });
+});
+
+// Broadcast to all connected clients
+function broadcastUpdate(key, value) {
+    const message = JSON.stringify({ type: 'update', key, value });
+    clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
+}
 
 // Middleware
 app.use(cors());
@@ -118,6 +151,10 @@ app.post('/api/text/:key', async (req, res) => {
             'INSERT INTO site_text (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP',
             [key, value]
         );
+
+        // Broadcast update to all connected WebSocket clients
+        broadcastUpdate(key, value);
+
         res.json({ success: true, key, value });
     } catch (err) {
         console.error('Error updating text:', err);
@@ -137,7 +174,8 @@ app.get('*', (req, res) => {
 
 // Start server
 initDatabase().then(() => {
-    app.listen(port, '0.0.0.0', () => {
+    server.listen(port, '0.0.0.0', () => {
         console.log(`Server running on port ${port}`);
+        console.log('WebSocket server ready');
     });
 });

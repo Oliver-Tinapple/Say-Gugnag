@@ -8,6 +8,9 @@ let resetTimer = null;
 let countdownTimer = null;
 let countdownElement = null;
 
+// WebSocket for real-time sync
+let ws = null;
+
 // Load text from database and apply to page
 async function loadEditableText() {
     try {
@@ -186,6 +189,92 @@ function initEditableText() {
 
         console.log('✏️ Click on any text to edit it!');
     }, 500);
+
+    // Connect to WebSocket for real-time sync
+    connectWebSocket();
+}
+
+// Connect to WebSocket server for real-time updates
+function connectWebSocket() {
+    // Determine WebSocket URL (ws:// for http, wss:// for https)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('✅ WebSocket connected - real-time sync enabled!');
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'update') {
+                // Don't update if user is currently editing this element
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.contentEditable === 'true') {
+                    return; // Skip update - user is editing
+                }
+
+                // Apply the update to the page
+                updateElement(data.key, data.value);
+            }
+        } catch (err) {
+            console.error('Error processing WebSocket message:', err);
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket disconnected, reconnecting in 3 seconds...');
+        setTimeout(connectWebSocket, 3000); // Auto-reconnect
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+}
+
+// Update a single element with new value
+function updateElement(key, value) {
+    switch (key) {
+        case 'main_header':
+            const header = document.querySelector('h1');
+            if (header) header.textContent = value;
+            break;
+        case 'button_text':
+            const button = document.querySelector('.button-text');
+            if (button) button.textContent = value;
+            break;
+        case 'top_marquee':
+            const marquee = document.querySelector('.top-marquee');
+            if (marquee) marquee.textContent = value;
+            break;
+        case 'spinning_text':
+            const spinning = document.querySelector('.spinning-text');
+            if (spinning) spinning.textContent = value;
+            break;
+        case 'badge1':
+            const badges = document.querySelectorAll('.badge');
+            if (badges[0]) badges[0].innerHTML = `<blink>${value}</blink>`;
+            break;
+        case 'badge2':
+            const badges2 = document.querySelectorAll('.badge');
+            if (badges2[1]) badges2[1].textContent = value;
+            break;
+        case 'badge3':
+            const badges3 = document.querySelectorAll('.badge');
+            if (badges3[2]) badges3[2].textContent = value;
+            break;
+        case 'footer_copyright':
+            const copyright = document.querySelector('.rainbow-text');
+            if (copyright) copyright.textContent = value;
+            break;
+        case 'popup_checkbox':
+            const checkbox = document.querySelector('.popup-toggle span');
+            if (checkbox) checkbox.textContent = value;
+            break;
+    }
 }
 
 // Auto-reset timer functions
@@ -197,20 +286,13 @@ function startResetTimer() {
     // Update last edit time
     lastEditTime = Date.now();
 
-    // Hide countdown if it exists
-    if (countdownElement) {
-        countdownElement.style.display = 'none';
-    }
+    // Start countdown immediately
+    showCountdown();
 
-    // Set timer for 60 seconds (show countdown at 30 seconds)
-    setTimeout(() => {
-        showCountdown();
-    }, 30000); // 30 seconds
-
-    // Set timer to reset after 60 seconds total
+    // Set timer to reset after 5 minutes (300 seconds)
     resetTimer = setTimeout(() => {
         resetToDefaults();
-    }, 60000); // 60 seconds
+    }, 300000); // 5 minutes = 300,000 milliseconds
 }
 
 function showCountdown() {
@@ -234,15 +316,23 @@ function showCountdown() {
         document.body.appendChild(countdownElement);
     }
 
-    let secondsLeft = 30;
-    countdownElement.textContent = `⏰ Resetting in ${secondsLeft}s...`;
+    let secondsLeft = 300; // 5 minutes = 300 seconds
+
+    // Function to format time as MM:SS
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    countdownElement.textContent = `⏰ Resetting in ${formatTime(secondsLeft)}`;
     countdownElement.style.display = 'block';
 
     // Update countdown every second
     countdownTimer = setInterval(() => {
         secondsLeft--;
         if (secondsLeft > 0) {
-            countdownElement.textContent = `⏰ Resetting in ${secondsLeft}s...`;
+            countdownElement.textContent = `⏰ Resetting in ${formatTime(secondsLeft)}`;
         } else {
             clearInterval(countdownTimer);
         }
