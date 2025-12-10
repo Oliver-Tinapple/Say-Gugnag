@@ -9,6 +9,8 @@ Just **click on any text** to edit it!
 - Press **Enter** to save
 - Press **Escape** to cancel
 - Everyone sees the changes instantly!
+- **Auto-reset**: Changes reset to defaults after 60 seconds
+- **Countdown**: A 30-second countdown appears in the top-right corner
 
 ## Files Added
 
@@ -30,5 +32,6 @@ Quick version:
 
 - `GET /api/text` - Get all text content
 - `POST /api/text/:key` - Update specific text
+- `POST /api/text/reset-all` - Reset all text to defaults (auto-called after 60 seconds)
 
 Simple and works with Railway's free PostgreSQL database!

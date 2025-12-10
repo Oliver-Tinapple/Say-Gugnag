@@ -75,6 +75,35 @@ app.get('/api/text', async (req, res) => {
     }
 });
 
+// Reset all text to defaults (MUST come before /:key route)
+app.post('/api/text/reset-all', async (_req, res) => {
+    try {
+        const defaultTexts = [
+            ['main_header', 'SAY GUGNAG'],
+            ['button_text', 'CLICK TO SAY GUGNAG'],
+            ['top_marquee', '⚠️ Warning: Screaming this word at the top of your lungs will result in PAIN⚠️'],
+            ['spinning_text', '🌟 THE WORD YOUR TEACHER LOVES 🌟'],
+            ['badge1', '⭐ FAVORITE WORD AMONGST YAHOO USERS ⭐'],
+            ['badge2', '💯 100% APPROVED BY ZERO TEACHERS 💯'],
+            ['badge3', '🔥 UNDER CONSTRUCTION 🔥'],
+            ['footer_copyright', '© 2024 "GUGNAG DANIALS" ENTERPRISES™'],
+            ['popup_checkbox', 'turn off popups like a bitch'],
+        ];
+
+        for (const [key, value] of defaultTexts) {
+            await pool.query(
+                'INSERT INTO site_text (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP',
+                [key, value]
+            );
+        }
+
+        res.json({ success: true, message: 'All text reset to defaults' });
+    } catch (err) {
+        console.error('Error resetting text:', err);
+        res.status(500).json({ error: 'Failed to reset text' });
+    }
+});
+
 // Update text content
 app.post('/api/text/:key', async (req, res) => {
     const { key } = req.params;

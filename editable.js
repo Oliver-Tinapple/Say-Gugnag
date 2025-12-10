@@ -2,6 +2,12 @@
 
 const API_URL = window.location.origin;
 
+// Timer for auto-reset
+let lastEditTime = null;
+let resetTimer = null;
+let countdownTimer = null;
+let countdownElement = null;
+
 // Load text from database and apply to page
 async function loadEditableText() {
     try {
@@ -98,6 +104,9 @@ function makeEditable(element, key) {
                         body: JSON.stringify({ value: newText })
                     });
                     console.log(`Saved ${key}: ${newText}`);
+
+                    // Start auto-reset timer after successful save
+                    startResetTimer();
                 } catch (err) {
                     console.error(`Error saving ${key}:`, err);
                     alert('Failed to save! Changes not saved.');
@@ -177,6 +186,96 @@ function initEditableText() {
 
         console.log('✏️ Click on any text to edit it!');
     }, 500);
+}
+
+// Auto-reset timer functions
+function startResetTimer() {
+    // Clear any existing timers
+    if (resetTimer) clearTimeout(resetTimer);
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    // Update last edit time
+    lastEditTime = Date.now();
+
+    // Hide countdown if it exists
+    if (countdownElement) {
+        countdownElement.style.display = 'none';
+    }
+
+    // Set timer for 60 seconds (show countdown at 30 seconds)
+    setTimeout(() => {
+        showCountdown();
+    }, 30000); // 30 seconds
+
+    // Set timer to reset after 60 seconds total
+    resetTimer = setTimeout(() => {
+        resetToDefaults();
+    }, 60000); // 60 seconds
+}
+
+function showCountdown() {
+    // Create countdown element if it doesn't exist
+    if (!countdownElement) {
+        countdownElement = document.createElement('div');
+        countdownElement.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 9999;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        `;
+        document.body.appendChild(countdownElement);
+    }
+
+    let secondsLeft = 30;
+    countdownElement.textContent = `⏰ Resetting in ${secondsLeft}s...`;
+    countdownElement.style.display = 'block';
+
+    // Update countdown every second
+    countdownTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft > 0) {
+            countdownElement.textContent = `⏰ Resetting in ${secondsLeft}s...`;
+        } else {
+            clearInterval(countdownTimer);
+        }
+    }, 1000);
+}
+
+async function resetToDefaults() {
+    try {
+        // Call API to reset all text
+        await fetch(`${API_URL}/api/text/reset-all`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Hide countdown
+        if (countdownElement) {
+            countdownElement.style.display = 'none';
+        }
+
+        // Reload all text from database
+        await loadEditableText();
+
+        console.log('✅ Text reset to defaults!');
+    } catch (err) {
+        console.error('Error resetting text:', err);
+    }
+
+    // Clear timers
+    lastEditTime = null;
+    if (resetTimer) clearTimeout(resetTimer);
+    if (countdownTimer) clearInterval(countdownTimer);
 }
 
 // Run when page loads
