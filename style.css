@@ -370,6 +370,10 @@ body.shake {
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
+    body {
+        font-size: 18px;
+    }
+
     h1 {
         font-size: 3rem;
     }
@@ -381,5 +385,18 @@ body.shake {
 
     .spinning-text {
         font-size: 1.2rem;
+    }
+
+    .badge {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+    }
+
+    .footer {
+        font-size: 1rem;
+    }
+
+    marquee {
+        font-size: 1.1rem;
     }
 }
