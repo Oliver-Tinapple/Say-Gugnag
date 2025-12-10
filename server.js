@@ -53,12 +53,23 @@ const pool = new Pool({
 // Initialize database table
 async function initDatabase() {
     try {
+        // Main table for current text
         await pool.query(`
             CREATE TABLE IF NOT EXISTS site_text (
                 id SERIAL PRIMARY KEY,
                 key VARCHAR(255) UNIQUE NOT NULL,
                 value TEXT NOT NULL,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // History table for ALL changes (never deleted)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS text_history (
+                id SERIAL PRIMARY KEY,
+                key VARCHAR(255) NOT NULL,
+                value TEXT NOT NULL,
+                changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
@@ -147,8 +158,15 @@ app.post('/api/text/:key', async (req, res) => {
     }
 
     try {
+        // Update current text
         await pool.query(
             'INSERT INTO site_text (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP',
+            [key, value]
+        );
+
+        // Save to history (NEVER deleted)
+        await pool.query(
+            'INSERT INTO text_history (key, value) VALUES ($1, $2)',
             [key, value]
         );
 
@@ -159,6 +177,19 @@ app.post('/api/text/:key', async (req, res) => {
     } catch (err) {
         console.error('Error updating text:', err);
         res.status(500).json({ error: 'Failed to update text' });
+    }
+});
+
+// Get change history
+app.get('/api/history', async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            'SELECT * FROM text_history ORDER BY changed_at DESC LIMIT 100'
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching history:', err);
+        res.status(500).json({ error: 'Failed to fetch history' });
     }
 });
 
