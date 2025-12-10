@@ -370,6 +370,23 @@ body.shake {
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
+    /* Mobile view indicator - shows you're in mobile mode */
+    body::before {
+        content: '📱 MOBILE VIEW';
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 255, 0, 0.9);
+        color: black;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 10000;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+    }
+
     body {
         font-size: 18px;
     }
