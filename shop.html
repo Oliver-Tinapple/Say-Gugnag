@@ -100,15 +100,20 @@
             width: 100%;
             max-width: 250px;
             height: 250px;
-            background: linear-gradient(45deg, #ff006e, #8338ec);
             border: 4px dashed #00ff00;
             border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 20px;
-            font-size: 4rem;
             animation: imageWobble 2s infinite;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         @keyframes imageWobble {
@@ -308,7 +313,7 @@
             <!-- Product 1: Say Gugnag Shirt -->
             <div class="product-card">
                 <div class="product-image">
-                    👕
+                    <img id="product-img" src="shopify-buttons/Pictures/navy.jpg" alt="Say Gugnag Shirt">
                 </div>
                 <h2 class="product-title">SAY GUGNAG SHIRT</h2>
                 <div class="price-section">
@@ -366,6 +371,7 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="discount.js"></script>
 
     <!-- Shopify Buy Button SDK -->
     <script type="text/javascript">
@@ -412,6 +418,24 @@
             });
         }
 
+        // Image alternation - front/back
+        let showingFront = false;
+        setInterval(() => {
+            showingFront = !showingFront;
+            updateProductImage();
+        }, 2000);
+
+        function updateProductImage() {
+            const productImg = document.getElementById('product-img');
+            if (productImg) {
+                if (showingFront) {
+                    productImg.src = `shopify-buttons/Pictures/${selectedColor}front.jpg`;
+                } else {
+                    productImg.src = `shopify-buttons/Pictures/${selectedColor}.jpg`;
+                }
+            }
+        }
+
         function selectColor(color) {
             selectedColor = color;
 
@@ -422,6 +446,9 @@
                     btn.classList.add('selected');
                 }
             });
+
+            // Update product image based on color (respects current front/back state)
+            updateProductImage();
 
             // Update available sizes
             updateSizeOptions();
@@ -567,40 +594,7 @@
             });
         }, 5000);
 
-        // Random discount that always equals $25!
-        function updateRandomDiscount() {
-            const salePrice = 25;
-            // Random discount between 99% and 999%
-            const discountPercent = Math.floor(Math.random() * 901) + 99;
-            // Calculate original price: if discount is X%, then original * (1 - X/100) = 25
-            // So original = 25 / (1 - X/100) = 25 / ((100-X)/100) = 2500 / (100-X)
-            // But since X > 100, we use: original = 25 * 100 / (100 - discountPercent)
-            // Actually for >100% discount, let's think of it as: original - (original * discount/100) = 25
-            // So original * (1 - discount/100) = 25, but discount > 100 makes this negative
-            // Let's just do: original = 25 * (100 / (100 - discountPercent)) but that's negative
-            // Simpler: original price = sale price + (sale price * discount / 100)
-            // If 99% off of X = 25, then X * 0.01 = 25, X = 2500
-            // If 500% off... that's nonsense math but funny!
-            // Let's do: originalPrice = salePrice * (100 / (100 - discountPercent)) for <100
-            // For >= 100, let's just make it absurd: originalPrice = salePrice * discountPercent
-
-            let originalPrice;
-            if (discountPercent < 100) {
-                originalPrice = salePrice / ((100 - discountPercent) / 100);
-            } else {
-                // For "impossible" discounts over 100%, just make it funny
-                originalPrice = salePrice * (discountPercent / 10);
-            }
-
-            // Update the display
-            document.querySelector('.original-price').textContent = `$${originalPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.querySelector('.discount-badge').textContent = `${discountPercent}% OFF!!!`;
-            document.querySelector('.sale-price').textContent = '$25.00';
-        }
-
-        // Update discount on load and every 3 seconds
-        updateRandomDiscount();
-        setInterval(updateRandomDiscount, 3000);
+        // Discount system is now handled by discount.js (shared across all pages)
     </script>
 </body>
 </html>
