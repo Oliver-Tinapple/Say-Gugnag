@@ -58,7 +58,7 @@
         /* PRODUCTS GRID */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 30px;
             margin: 40px 0;
         }
@@ -163,27 +163,61 @@
             50% { transform: scale(1.1); }
         }
 
-        .buy-button {
-            font-size: 1.8rem;
-            padding: 20px 50px;
-            background: linear-gradient(45deg, #00ff00, #00ffff, #ff00ff);
-            background-size: 200% 200%;
-            animation: gradientShift 2s ease infinite;
-            border: 4px solid #ffff00;
-            border-radius: 30px;
-            color: white;
-            font-family: 'Comic Sans MS', cursive;
-            font-weight: bold;
-            cursor: pointer;
-            text-shadow: 2px 2px 4px black;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
-            transition: all 0.3s;
-            margin-top: 15px;
+        /* VARIANT SELECTOR */
+        .variant-selector {
+            margin: 20px 0;
         }
 
-        .buy-button:hover {
-            transform: scale(1.15) rotate(5deg);
-            box-shadow: 0 0 40px rgba(0, 255, 0, 1);
+        .variant-label {
+            color: #ffff00;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px black;
+        }
+
+        .variant-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .variant-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-family: 'Comic Sans MS', cursive;
+            font-weight: bold;
+            border: 3px solid #ff00ff;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .variant-btn:hover {
+            background: rgba(255, 0, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .variant-btn.selected {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            border-color: #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+        }
+
+        .variant-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        /* Shopify button container */
+        .shopify-button-container {
+            margin-top: 20px;
+            min-height: 50px;
         }
 
         .stock-warning {
@@ -230,9 +264,8 @@
                 font-size: 2rem;
             }
 
-            .buy-button {
-                font-size: 1.3rem;
-                padding: 15px 30px;
+            .products-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -283,9 +316,32 @@
                     <span class="discount-badge">99% OFF!!!</span>
                     <div class="sale-price">$25.00</div>
                 </div>
-                <button class="buy-button" onclick="buyProduct('say-gugnag-shirt')">
-                    🛒 BUY NOW!!!
-                </button>
+
+                <!-- Color Selector -->
+                <div class="variant-selector">
+                    <div class="variant-label">🎨 COLOR:</div>
+                    <div class="variant-options" id="color-options">
+                        <button class="variant-btn selected" data-color="navy" onclick="selectColor('navy')">NAVY</button>
+                        <button class="variant-btn" data-color="black" onclick="selectColor('black')">BLACK</button>
+                    </div>
+                </div>
+
+                <!-- Size Selector -->
+                <div class="variant-selector">
+                    <div class="variant-label">📏 SIZE:</div>
+                    <div class="variant-options" id="size-options">
+                        <button class="variant-btn selected" data-size="small" onclick="selectSize('small')">S</button>
+                        <button class="variant-btn" data-size="medium" onclick="selectSize('medium')">M</button>
+                        <button class="variant-btn" data-size="large" onclick="selectSize('large')">L</button>
+                        <button class="variant-btn" data-size="xlarge" onclick="selectSize('xlarge')">XL</button>
+                    </div>
+                </div>
+
+                <!-- Shopify Buy Button Container -->
+                <div class="shopify-button-container" id="shopify-button-container">
+                    <!-- Button will be inserted here by JavaScript -->
+                </div>
+
                 <p class="stock-warning">⚠️ Only 69,420 left in stock! ⚠️</p>
             </div>
 
@@ -310,11 +366,196 @@
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // Shop-specific functionality
-        function buyProduct(productId) {
-            // TODO: Connect to Printify checkout
-            alert('🎉 AMAZING CHOICE!!! 🎉\n\nPrintify checkout coming soon!\n\nYou selected: ' + productId);
+
+    <!-- Shopify Buy Button SDK -->
+    <script type="text/javascript">
+        // Variant data - which combinations are available
+        const variants = {
+            'navy-small': '47354618970277',
+            'navy-medium': '47354619003045',
+            'navy-large': '47354619035813',
+            'navy-xlarge': '47354619068581',
+            'black-small': '47354601832613',
+            'black-medium': '47354601865381'
+            // black-large and black-xlarge not available
+        };
+
+        // Available sizes per color
+        const availableSizes = {
+            'navy': ['small', 'medium', 'large', 'xlarge'],
+            'black': ['small', 'medium']
+        };
+
+        let selectedColor = 'navy';
+        let selectedSize = 'small';
+        let shopifyClient = null;
+        let shopifyUI = null;
+
+        // Load Shopify SDK
+        (function() {
+            var scriptURL = 'https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.min.js';
+            var script = document.createElement('script');
+            script.async = true;
+            script.src = scriptURL;
+            script.onload = initShopify;
+            document.head.appendChild(script);
+        })();
+
+        function initShopify() {
+            shopifyClient = ShopifyBuy.buildClient({
+                domain: 'ns56iq-0b.myshopify.com',
+                storefrontAccessToken: '8a1d1958c2c851cbdd3eca8261346d36',
+            });
+            ShopifyBuy.UI.onReady(shopifyClient).then(function(ui) {
+                shopifyUI = ui;
+                updateBuyButton();
+            });
+        }
+
+        function selectColor(color) {
+            selectedColor = color;
+
+            // Update color button styles
+            document.querySelectorAll('#color-options .variant-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.dataset.color === color) {
+                    btn.classList.add('selected');
+                }
+            });
+
+            // Update available sizes
+            updateSizeOptions();
+
+            // If current size not available, select first available
+            if (!availableSizes[color].includes(selectedSize)) {
+                selectSize(availableSizes[color][0]);
+            } else {
+                updateBuyButton();
+            }
+        }
+
+        function selectSize(size) {
+            selectedSize = size;
+
+            // Update size button styles
+            document.querySelectorAll('#size-options .variant-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.dataset.size === size) {
+                    btn.classList.add('selected');
+                }
+            });
+
+            updateBuyButton();
+        }
+
+        function updateSizeOptions() {
+            const available = availableSizes[selectedColor];
+            document.querySelectorAll('#size-options .variant-btn').forEach(btn => {
+                const size = btn.dataset.size;
+                if (available.includes(size)) {
+                    btn.disabled = false;
+                } else {
+                    btn.disabled = true;
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        function updateBuyButton() {
+            if (!shopifyUI) return;
+
+            const variantKey = `${selectedColor}-${selectedSize}`;
+            const variantId = variants[variantKey];
+
+            if (!variantId) {
+                document.getElementById('shopify-button-container').innerHTML = '<p style="color: #ff0000;">This variant is not available!</p>';
+                return;
+            }
+
+            // Clear existing button
+            document.getElementById('shopify-button-container').innerHTML = '<div id="product-component"></div>';
+
+            // Create new button for selected variant
+            shopifyUI.createComponent('product', {
+                id: '10441614131365',
+                variantId: variantId,
+                node: document.getElementById('product-component'),
+                moneyFormat: '%24%7B%7Bamount%7D%7D',
+                options: {
+                    "product": {
+                        "styles": {
+                            "product": {
+                                "text-align": "center"
+                            },
+                            "title": {
+                                "display": "none"
+                            },
+                            "price": {
+                                "display": "none"
+                            },
+                            "button": {
+                                "font-family": "Comic Sans MS, cursive",
+                                "font-size": "20px",
+                                "padding": "15px 40px",
+                                "color": "#ffffff",
+                                "background": "linear-gradient(45deg, #00ff00, #00ffff, #ff00ff)",
+                                "background-color": "#00ff00",
+                                ":hover": {
+                                    "background-color": "#00cc00",
+                                    "transform": "scale(1.1)"
+                                },
+                                ":focus": {
+                                    "background-color": "#00cc00"
+                                },
+                                "border-radius": "30px",
+                                "font-weight": "bold"
+                            }
+                        },
+                        "buttonDestination": "checkout",
+                        "contents": {
+                            "img": false,
+                            "title": false,
+                            "price": false,
+                            "options": false
+                        },
+                        "text": {
+                            "button": "🛒 BUY NOW!!!"
+                        }
+                    },
+                    "cart": {
+                        "styles": {
+                            "button": {
+                                "font-family": "Comic Sans MS, cursive",
+                                "background-color": "#00ff00",
+                                ":hover": {
+                                    "background-color": "#00cc00"
+                                },
+                                ":focus": {
+                                    "background-color": "#00cc00"
+                                },
+                                "border-radius": "20px"
+                            }
+                        },
+                        "text": {
+                            "total": "Subtotal",
+                            "button": "Checkout"
+                        }
+                    },
+                    "toggle": {
+                        "styles": {
+                            "toggle": {
+                                "background-color": "#00ff00",
+                                ":hover": {
+                                    "background-color": "#00cc00"
+                                },
+                                ":focus": {
+                                    "background-color": "#00cc00"
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Random stock number changes
