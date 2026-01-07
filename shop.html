@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GUGNAG SHOP 🛒 99% OFF!!!</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* SHOP-SPECIFIC STYLES */
+        .shop-header h1 {
+            font-size: 4rem;
+        }
+
+        .sale-banner {
+            background: repeating-linear-gradient(
+                45deg,
+                #ff0000,
+                #ff0000 10px,
+                #ffff00 10px,
+                #ffff00 20px
+            );
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            padding: 20px;
+            text-shadow: 3px 3px 6px black;
+            animation: salePulse 0.5s infinite;
+            border: 5px solid #00ff00;
+            margin: 20px 0;
+        }
+
+        @keyframes salePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .back-link {
+            display: inline-block;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 4px solid #ffff00;
+            border-radius: 15px;
+            margin: 20px 0;
+            animation: buttonWobble 2s infinite;
+            text-shadow: 2px 2px 4px black;
+        }
+
+        .back-link:hover {
+            transform: scale(1.1) rotate(-5deg);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
+        }
+
+        /* PRODUCTS GRID */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .product-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 5px solid #ff00ff;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow:
+                0 0 20px rgba(255, 0, 255, 0.5),
+                0 0 40px rgba(0, 255, 255, 0.3);
+            animation: cardFloat 3s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card::before {
+            content: '🔥 HOT DEAL 🔥';
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: #ff0000;
+            color: white;
+            padding: 5px 40px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transform: rotate(45deg);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0) rotate(-1deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+        }
+
+        .product-image {
+            width: 100%;
+            max-width: 250px;
+            height: 250px;
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            border: 4px dashed #00ff00;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 4rem;
+            animation: imageWobble 2s infinite;
+        }
+
+        @keyframes imageWobble {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        .product-title {
+            font-size: 2rem;
+            color: #00ffff;
+            text-shadow: 2px 2px 4px black;
+            margin: 15px 0;
+            animation: colorChange 3s infinite;
+        }
+
+        .price-section {
+            margin: 20px 0;
+        }
+
+        .original-price {
+            font-size: 1.5rem;
+            color: #ff0000;
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+
+        .discount-badge {
+            display: inline-block;
+            background: #ff0000;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin: 10px;
+            animation: blink 0.5s infinite;
+        }
+
+        .sale-price {
+            font-size: 3rem;
+            color: #00ff00;
+            font-weight: bold;
+            text-shadow:
+                0 0 10px #00ff00,
+                0 0 20px #00ff00,
+                0 0 30px #00ff00;
+            animation: pricePulse 1s infinite;
+        }
+
+        @keyframes pricePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .buy-button {
+            font-size: 1.8rem;
+            padding: 20px 50px;
+            background: linear-gradient(45deg, #00ff00, #00ffff, #ff00ff);
+            background-size: 200% 200%;
+            animation: gradientShift 2s ease infinite;
+            border: 4px solid #ffff00;
+            border-radius: 30px;
+            color: white;
+            font-family: 'Comic Sans MS', cursive;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 2px 2px 4px black;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .buy-button:hover {
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 0 40px rgba(0, 255, 0, 1);
+        }
+
+        .stock-warning {
+            color: #ff0000;
+            font-size: 1rem;
+            margin-top: 15px;
+            animation: blink 1s infinite;
+            font-weight: bold;
+        }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .trust-badge {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #00ff00;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: #00ff00;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .shop-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .sale-banner {
+                font-size: 1.5rem;
+                padding: 15px;
+            }
+
+            .product-title {
+                font-size: 1.5rem;
+            }
+
+            .sale-price {
+                font-size: 2rem;
+            }
+
+            .buy-button {
+                font-size: 1.3rem;
+                padding: 15px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor-trail"></div>
+
+    <!-- Snow effect -->
+    <div class="snowflakes" aria-hidden="true">
+        <div class="snowflake">❅</div>
+        <div class="snowflake">❆</div>
+        <div class="snowflake">❅</div>
+        <div class="snowflake">❆</div>
+        <div class="snowflake">❅</div>
+        <div class="snowflake">❆</div>
+        <div class="snowflake">❅</div>
+        <div class="snowflake">❆</div>
+        <div class="snowflake">❅</div>
+        <div class="snowflake">❆</div>
+    </div>
+
+    <marquee behavior="scroll" direction="left" class="top-marquee">
+        🛒 GUGNAG OFFICIAL MERCH 🛒 LIMITED TIME ONLY 🛒 99% OFF EVERYTHING 🛒 YOUR TEACHER WILL HATE YOUR NEW SHIRT 🛒
+    </marquee>
+
+    <div class="container">
+        <div class="header shop-header">
+            <h1 class="glitch" data-text="GUGNAG SHOP">GUGNAG SHOP</h1>
+            <div class="blink">💰 OFFICIAL MERCHANDISE 💰</div>
+        </div>
+
+        <a href="/" class="back-link">⬅️ BACK TO GUGNAG</a>
+
+        <div class="sale-banner">
+            <marquee behavior="alternate">🚨 INSANE SALE!!! 99% OFF!!! TODAY ONLY!!! (and tomorrow) (and forever) 🚨</marquee>
+        </div>
+
+        <!-- PRODUCTS SECTION -->
+        <div class="products-grid">
+            <!-- Product 1: Say Gugnag Shirt -->
+            <div class="product-card">
+                <div class="product-image">
+                    👕
+                </div>
+                <h2 class="product-title">SAY GUGNAG SHIRT</h2>
+                <div class="price-section">
+                    <div class="original-price">$2,500.00</div>
+                    <span class="discount-badge">99% OFF!!!</span>
+                    <div class="sale-price">$25.00</div>
+                </div>
+                <button class="buy-button" onclick="buyProduct('say-gugnag-shirt')">
+                    🛒 BUY NOW!!!
+                </button>
+                <p class="stock-warning">⚠️ Only 69,420 left in stock! ⚠️</p>
+            </div>
+
+            <!-- More products can be added here -->
+        </div>
+
+        <div class="trust-badges">
+            <div class="trust-badge">✅ 100% Real Shirt</div>
+            <div class="trust-badge">🚚 Ships Eventually</div>
+            <div class="trust-badge">💯 Teacher Disapproval Guaranteed</div>
+            <div class="trust-badge">🔒 Probably Secure</div>
+        </div>
+
+        <marquee behavior="scroll" direction="right" class="bottom-marquee">
+            🎄 PERFECT CHRISTMAS GIFT 🎄 WEAR IT TO SCHOOL 🎄 GET SENT HOME 🎄 WORTH IT 🎄
+        </marquee>
+
+        <footer class="footer">
+            <p class="rainbow-text">© 2024 GUGNAG ENTERPRISES™</p>
+            <p class="small-text">All sales are final (we think)</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Shop-specific functionality
+        function buyProduct(productId) {
+            // TODO: Connect to Printify checkout
+            alert('🎉 AMAZING CHOICE!!! 🎉\n\nPrintify checkout coming soon!\n\nYou selected: ' + productId);
+        }
+
+        // Random stock number changes
+        setInterval(() => {
+            const stockWarnings = document.querySelectorAll('.stock-warning');
+            stockWarnings.forEach(warning => {
+                const randomStock = Math.floor(Math.random() * 100000) + 420;
+                warning.textContent = `⚠️ Only ${randomStock.toLocaleString()} left in stock! ⚠️`;
+            });
+        }, 5000);
+    </script>
+</body>
+</html>
