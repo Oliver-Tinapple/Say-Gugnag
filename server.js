@@ -73,14 +73,40 @@ async function initDatabase() {
             )
         `);
 
-        // IP logging table for video player visitors
+        // IP logging table for video player visitors (expanded)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS ip_logs (
                 id SERIAL PRIMARY KEY,
                 ip VARCHAR(45) NOT NULL,
+                ip_type VARCHAR(10),
+                isp_guess TEXT,
                 user_agent TEXT,
                 referer TEXT,
                 page VARCHAR(255),
+                accept_language TEXT,
+                platform TEXT,
+                screen_width INT,
+                screen_height INT,
+                viewport_width INT,
+                viewport_height INT,
+                color_depth INT,
+                pixel_ratio REAL,
+                timezone TEXT,
+                timezone_offset INT,
+                touch_support BOOLEAN,
+                cookies_enabled BOOLEAN,
+                do_not_track TEXT,
+                online BOOLEAN,
+                connection_type TEXT,
+                device_memory REAL,
+                hardware_concurrency INT,
+                browser_plugins TEXT,
+                canvas_hash TEXT,
+                webgl_vendor TEXT,
+                webgl_renderer TEXT,
+                fonts_detected TEXT,
+                battery_level REAL,
+                battery_charging BOOLEAN,
                 visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -218,23 +244,147 @@ app.get('/shop', (req, res) => {
 // Trust proxy for Railway (to get real IP)
 app.set('trust proxy', true);
 
-// Video player page - logs visitor IP
+// Known ISP prefixes for IPv6
+const ipv6Prefixes = {
+    '2607:fb90': 'T-Mobile USA',
+    '2607:fb91': 'T-Mobile USA',
+    '2607:fc20': 'T-Mobile USA',
+    '2600:1700': 'AT&T',
+    '2600:1000': 'AT&T',
+    '2600:8800': 'AT&T',
+    '2601:': 'Comcast',
+    '2603:': 'Comcast',
+    '2602:': 'Verizon',
+    '2604:': 'Spectrum/Charter',
+    '2605:': 'Cox',
+    '2620:': 'Various (often corporate)',
+    '2a00:': 'European ISP',
+    '2a01:': 'European ISP',
+    '2a02:': 'European ISP',
+    '2a03:': 'European ISP',
+    '2400:': 'Asia-Pacific ISP',
+    '2404:': 'Asia-Pacific ISP',
+    '2001:470': 'Hurricane Electric (tunnel)',
+    '2001:4860': 'Google',
+    '2606:4700': 'Cloudflare',
+    '2620:fe': 'Facebook/Meta',
+};
+
+function guessISP(ip) {
+    if (!ip) return 'Unknown';
+
+    // Check if IPv4
+    if (ip.includes('.') && !ip.includes(':')) {
+        const firstOctet = parseInt(ip.split('.')[0]);
+        // Some common IPv4 ranges (very rough)
+        if (ip.startsWith('172.') || ip.startsWith('192.168.') || ip.startsWith('10.')) return 'Private Network';
+        return 'IPv4 - lookup required';
+    }
+
+    // IPv6 prefix matching
+    for (const [prefix, isp] of Object.entries(ipv6Prefixes)) {
+        if (ip.toLowerCase().startsWith(prefix.toLowerCase())) {
+            return isp;
+        }
+    }
+
+    return 'Unknown ISP';
+}
+
+function getIPType(ip) {
+    if (!ip) return 'Unknown';
+    if (ip.includes(':')) return 'IPv6';
+    if (ip.includes('.')) return 'IPv4';
+    return 'Unknown';
+}
+
+// Video player page - logs visitor IP and headers
 app.get('/video', async (req, res) => {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || req.socket.remoteAddress;
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const referer = req.headers['referer'] || 'Direct';
+    const acceptLanguage = req.headers['accept-language'] || 'Unknown';
+    const ipType = getIPType(ip);
+    const ispGuess = guessISP(ip);
 
     try {
         await pool.query(
-            'INSERT INTO ip_logs (ip, user_agent, referer, page) VALUES ($1, $2, $3, $4)',
-            [ip, userAgent, referer, '/video']
+            `INSERT INTO ip_logs (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING id`,
+            [ip, ipType, ispGuess, userAgent, referer, '/video', acceptLanguage]
         );
-        console.log(`[IP LOGGED] ${ip} visited /video`);
+        console.log(`[IP LOGGED] ${ip} (${ipType}) - ${ispGuess} visited /video`);
     } catch (err) {
         console.error('Error logging IP:', err);
     }
 
     res.sendFile(path.join(__dirname, 'video.html'));
+});
+
+// API endpoint to receive client-side fingerprint data
+app.post('/api/fingerprint', async (req, res) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress;
+    const data = req.body;
+
+    try {
+        // Update the most recent entry for this IP with client-side data
+        await pool.query(
+            `UPDATE ip_logs SET
+                platform = $1,
+                screen_width = $2,
+                screen_height = $3,
+                viewport_width = $4,
+                viewport_height = $5,
+                color_depth = $6,
+                pixel_ratio = $7,
+                timezone = $8,
+                timezone_offset = $9,
+                touch_support = $10,
+                cookies_enabled = $11,
+                do_not_track = $12,
+                online = $13,
+                connection_type = $14,
+                device_memory = $15,
+                hardware_concurrency = $16,
+                browser_plugins = $17,
+                canvas_hash = $18,
+                webgl_vendor = $19,
+                webgl_renderer = $20,
+                battery_level = $21,
+                battery_charging = $22
+            WHERE ip = $23 AND id = (SELECT MAX(id) FROM ip_logs WHERE ip = $23)`,
+            [
+                data.platform,
+                data.screenWidth,
+                data.screenHeight,
+                data.viewportWidth,
+                data.viewportHeight,
+                data.colorDepth,
+                data.pixelRatio,
+                data.timezone,
+                data.timezoneOffset,
+                data.touchSupport,
+                data.cookiesEnabled,
+                data.doNotTrack,
+                data.online,
+                data.connectionType,
+                data.deviceMemory,
+                data.hardwareConcurrency,
+                data.plugins,
+                data.canvasHash,
+                data.webglVendor,
+                data.webglRenderer,
+                data.batteryLevel,
+                data.batteryCharging,
+                ip
+            ]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating fingerprint:', err);
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // Serve index.html for all other routes

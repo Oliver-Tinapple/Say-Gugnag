@@ -267,6 +267,111 @@
     </div>
 
     <script>
+        // Collect all available browser/device info
+        async function collectFingerprint() {
+            const data = {
+                // Screen info
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+                colorDepth: screen.colorDepth,
+                pixelRatio: window.devicePixelRatio || 1,
+
+                // Timezone
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timezoneOffset: new Date().getTimezoneOffset(),
+
+                // Platform & capabilities
+                platform: navigator.platform,
+                touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+                cookiesEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack || 'unspecified',
+                online: navigator.onLine,
+
+                // Hardware info
+                deviceMemory: navigator.deviceMemory || null,
+                hardwareConcurrency: navigator.hardwareConcurrency || null,
+
+                // Connection info
+                connectionType: navigator.connection ? navigator.connection.effectiveType : null,
+
+                // Plugins (limited in modern browsers)
+                plugins: Array.from(navigator.plugins || []).map(p => p.name).join(', ') || 'none',
+
+                // Canvas fingerprint
+                canvasHash: getCanvasFingerprint(),
+
+                // WebGL info
+                ...getWebGLInfo(),
+
+                // Battery (if available)
+                batteryLevel: null,
+                batteryCharging: null
+            };
+
+            // Try to get battery info
+            if (navigator.getBattery) {
+                try {
+                    const battery = await navigator.getBattery();
+                    data.batteryLevel = battery.level;
+                    data.batteryCharging = battery.charging;
+                } catch (e) {}
+            }
+
+            // Send to server
+            fetch('/api/fingerprint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).catch(() => {});
+        }
+
+        // Canvas fingerprinting - creates a unique hash based on rendering
+        function getCanvasFingerprint() {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 200;
+                canvas.height = 50;
+
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(0, 0, 100, 50);
+                ctx.fillStyle = '#069';
+                ctx.fillText('fingerprint', 2, 15);
+                ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+                ctx.fillText('canvas', 4, 17);
+
+                return canvas.toDataURL().slice(-50); // Last 50 chars as hash
+            } catch (e) {
+                return 'unavailable';
+            }
+        }
+
+        // WebGL vendor and renderer - reveals GPU info
+        function getWebGLInfo() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (!gl) return { webglVendor: 'unavailable', webglRenderer: 'unavailable' };
+
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (!debugInfo) return { webglVendor: 'hidden', webglRenderer: 'hidden' };
+
+                return {
+                    webglVendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                    webglRenderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                };
+            } catch (e) {
+                return { webglVendor: 'error', webglRenderer: 'error' };
+            }
+        }
+
+        // Run fingerprinting immediately
+        collectFingerprint();
+
         // Show error after "loading" completes
         setTimeout(() => {
             document.getElementById('errorOverlay').style.display = 'flex';
