@@ -75,7 +75,7 @@ async function initDatabase() {
 
         // IP logging table for video player visitors (expanded)
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS ip_logs (
+            CREATE TABLE IF NOT EXISTS ip_logs2 (
                 id SERIAL PRIMARY KEY,
                 ip VARCHAR(45) NOT NULL,
                 ip_type VARCHAR(10),
@@ -309,7 +309,7 @@ app.get('/video', async (req, res) => {
 
     try {
         await pool.query(
-            `INSERT INTO ip_logs (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
+            `INSERT INTO ip_logs2 (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING id`,
             [ip, ipType, ispGuess, userAgent, referer, '/video', acceptLanguage]
@@ -330,7 +330,7 @@ app.post('/api/fingerprint', async (req, res) => {
     try {
         // Update ALL entries for this IP with client-side data (in case they reconnect)
         await pool.query(
-            `UPDATE ip_logs SET
+            `UPDATE ip_logs2 SET
                 platform = $1,
                 screen_width = $2,
                 screen_height = $3,
@@ -353,7 +353,7 @@ app.post('/api/fingerprint', async (req, res) => {
                 webgl_renderer = $20,
                 battery_level = $21,
                 battery_charging = $22
-            WHERE id = (SELECT MAX(id) FROM ip_logs WHERE ip = $23)`,
+            WHERE id = (SELECT MAX(id) FROM ip_logs2 WHERE ip = $23)`,
             [
                 data.platform,
                 data.screenWidth,
