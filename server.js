@@ -322,6 +322,30 @@ app.get('/video', async (req, res) => {
     res.sendFile(path.join(__dirname, 'video.html'));
 });
 
+// PayPal page - logs visitor IP and headers
+app.get('/paypal', async (req, res) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const referer = req.headers['referer'] || 'Direct';
+    const acceptLanguage = req.headers['accept-language'] || 'Unknown';
+    const ipType = getIPType(ip);
+    const ispGuess = guessISP(ip);
+
+    try {
+        await pool.query(
+            `INSERT INTO ip_logs2 (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING id`,
+            [ip, ipType, ispGuess, userAgent, referer, '/paypal', acceptLanguage]
+        );
+        console.log(`[IP LOGGED] ${ip} (${ipType}) - ${ispGuess} visited /paypal`);
+    } catch (err) {
+        console.error('Error logging IP:', err);
+    }
+
+    res.sendFile(path.join(__dirname, 'paypal.html'));
+});
+
 // API endpoint to receive client-side fingerprint data
 app.post('/api/fingerprint', async (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress;
