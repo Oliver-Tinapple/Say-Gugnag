@@ -73,6 +73,18 @@ async function initDatabase() {
             )
         `);
 
+        // IP logging table for video player visitors
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS ip_logs (
+                id SERIAL PRIMARY KEY,
+                ip VARCHAR(45) NOT NULL,
+                user_agent TEXT,
+                referer TEXT,
+                page VARCHAR(255),
+                visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Insert default values if table is empty
         const { rows } = await pool.query('SELECT COUNT(*) FROM site_text');
         if (parseInt(rows[0].count) === 0) {
@@ -201,6 +213,28 @@ app.get('/api/health', (req, res) => {
 // Shop page
 app.get('/shop', (req, res) => {
     res.sendFile(path.join(__dirname, 'shop.html'));
+});
+
+// Trust proxy for Railway (to get real IP)
+app.set('trust proxy', true);
+
+// Video player page - logs visitor IP
+app.get('/video', async (req, res) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const referer = req.headers['referer'] || 'Direct';
+
+    try {
+        await pool.query(
+            'INSERT INTO ip_logs (ip, user_agent, referer, page) VALUES ($1, $2, $3, $4)',
+            [ip, userAgent, referer, '/video']
+        );
+        console.log(`[IP LOGGED] ${ip} visited /video`);
+    } catch (err) {
+        console.error('Error logging IP:', err);
+    }
+
+    res.sendFile(path.join(__dirname, 'video.html'));
 });
 
 // Serve index.html for all other routes

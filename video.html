@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player - Loading...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0f0f0f;
+            font-family: 'Roboto', Arial, sans-serif;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #333;
+            border-top: 4px solid #ff0000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #ff0000;
+            width: 0%;
+            animation: loading 3s ease-in-out forwards;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            20% { width: 25%; }
+            40% { width: 45%; }
+            60% { width: 65%; }
+            80% { width: 85%; }
+            90% { width: 92%; }
+            100% { width: 95%; }
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        .play-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-btn svg {
+            fill: #fff;
+            width: 20px;
+            height: 20px;
+        }
+
+        .timeline {
+            flex: 1;
+            height: 4px;
+            background: #444;
+            margin: 0 16px;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .timeline-buffered {
+            position: absolute;
+            height: 100%;
+            background: #666;
+            width: 15%;
+            border-radius: 2px;
+        }
+
+        .time-display {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .video-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .video-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .channel-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .channel-name {
+            font-weight: 500;
+        }
+
+        .channel-subs {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .error-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .error-message {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .error-submessage {
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-wrapper">
+            <div class="video-player">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading video...</div>
+                <div class="loading-subtext">Please wait while we connect to the server</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+
+                <div class="error-overlay" id="errorOverlay">
+                    <div class="error-icon">:(</div>
+                    <div class="error-message">Video unavailable</div>
+                    <div class="error-submessage">This video has been removed or is not available in your region</div>
+                </div>
+            </div>
+
+            <div class="video-controls">
+                <button class="play-btn">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <div class="timeline">
+                    <div class="timeline-buffered"></div>
+                </div>
+                <span class="time-display">0:00 / 12:47</span>
+            </div>
+        </div>
+
+        <h1 class="video-title">SHOCKING: You Won't Believe What Happened Next...</h1>
+        <div class="video-info">
+            <span>1.2M views</span>
+            <span>-</span>
+            <span>2 days ago</span>
+        </div>
+
+        <div class="channel-info">
+            <div class="channel-avatar"></div>
+            <div>
+                <div class="channel-name">Viral Videos Daily</div>
+                <div class="channel-subs">2.4M subscribers</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show error after "loading" completes
+        setTimeout(() => {
+            document.getElementById('errorOverlay').style.display = 'flex';
+        }, 4000);
+    </script>
+</body>
+</html>
