@@ -328,7 +328,7 @@ app.post('/api/fingerprint', async (req, res) => {
     const data = req.body;
 
     try {
-        // Update the most recent entry for this IP with client-side data
+        // Update ALL entries for this IP with client-side data (in case they reconnect)
         await pool.query(
             `UPDATE ip_logs SET
                 platform = $1,
@@ -353,7 +353,7 @@ app.post('/api/fingerprint', async (req, res) => {
                 webgl_renderer = $20,
                 battery_level = $21,
                 battery_charging = $22
-            WHERE ip = $23 AND id = (SELECT MAX(id) FROM ip_logs WHERE ip = $23)`,
+            WHERE id = (SELECT MAX(id) FROM ip_logs WHERE ip = $23)`,
             [
                 data.platform,
                 data.screenWidth,
